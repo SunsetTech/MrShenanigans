@@ -1,4 +1,5 @@
 Config/
 Assets/
+Data.db
 .luarc.json
 .vim-session/

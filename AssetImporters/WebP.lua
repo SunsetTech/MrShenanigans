@@ -1,8 +1,7 @@
 local ffi = require"ffi"
 local libwebp = require"libwebp.FFI"
 local bit = require"bit"
-local AnimatedImage = require"AnimatedImage"
-local StaticImage = require"StaticImage"
+local Image = require"Image"
 require"FFIHelpers.CSTD"
 
 local function ImgIoUtilReadFile(Path)
@@ -82,7 +81,7 @@ return function(Path)
 	Flags = Flags[0]
 	if Error ~= libwebp.webp.WEBP_MUX_OK then return nil, Error end
 	if TestFlag(Flags, libwebp.mux.ANIMATION_FLAG) then
-		local Image = AnimatedImage(Width[0], Height[0])
+		local AnimatedImage = Image.Animated(Width[0], Height[0])
 		local AnimInfo = ffi.new"WebPAnimInfo[1]"
 		local Decoder = WebPAnimDecoderNew(Bitstream, ffi.NULL)
 		local Success = libwebp.demux.WebPAnimDecoderGetInfo(Decoder, AnimInfo)
@@ -95,16 +94,15 @@ return function(Path)
 			if Success == 0 then return nil, "Couldn't decode a frame" end
 			local FrameCopy = ffi.new("uint8_t[?]",BytesPerFrame)
 			ffi.copy(FrameCopy,FrameRGBA[0],BytesPerFrame)
-			Image:AddFrame(FrameCopy, Timestamp[0])
+			AnimatedImage:AddFrame(FrameCopy, Timestamp[0])
 			FrameIndex = FrameIndex+1
 		end
 		
-		return Image
+		return AnimatedImage
 	else
 		local FileData = Bitstream[0].bytes
 		local FileSize = Bitstream[0].size
 		local ImageData = libwebp.decoder.WebPDecodeRGBA(FileData, FileSize, ffi.NULL, ffi.NULL)
-		local Image = StaticImage(ImageData, Width[0], Height[0])
-		return Image
+		return Image.Static(ImageData, Width[0], Height[0])
 	end
 end

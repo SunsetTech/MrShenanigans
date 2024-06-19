@@ -62,7 +62,11 @@ return function(SharedData)
 
 		local GameWindowName = arg[1] or error"Provide game window title"
 		
-		local Textures = Assets.LoadTextures()
+
+		print"Loading textures"
+		local Start = Utils.GetTime()
+		local Textures, TotalTextures = Assets.LoadTextures()
+		print("Loaded ".. TotalTextures .." textures")
 		
 		print"Creating dynamic textures"
 		local GamePixmapAttributes = ffi.new(
@@ -74,11 +78,7 @@ return function(SharedData)
 		)
 		Textures.Game = Capture.CreateTexture()
 		Textures.NDISource = NDI.CreateTexture()
-
-		print"Loading textures"
-		local Start = Utils.GetTime()
-		print("Texture loading took ".. Utils.GetTime() - Start .." seconds")
-		print("Loaded ".. #Textures .." textures")
+		print("Texture loading/creation took ".. Utils.GetTime() - Start .." seconds")
 		SharedData.Textures = Textures.Buddies
 		
 		local RendererInstance = Renderer()

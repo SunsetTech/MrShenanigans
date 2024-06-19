@@ -2,7 +2,7 @@ local cqueues = require"cqueues"
 cqueues.errno = require"cqueues.errno"
 cqueues.socket = require"cqueues.socket"
 local lpeg = require"lpeg"
-local IRCGrammar = require"IRCGrammar":Decompose():Decompose()
+local IRCGrammar = require"Grammars.IRC":Decompose():Decompose()
 local IRC = require"IRC"
 local Twitch = require"Twitch"
 
@@ -59,7 +59,7 @@ return function(SharedData)
 							local CommandPointsToCredit = Bits*69
 							local NewTotal = SharedData.Database:AddPoints(UserID, CommandPointsToCredit)
 							local Response = IRC.PRIVMSG("#".. SharedData.Config.Twitch.Channel, "Thanks for the ".. tostring(Bits) .." bit(s)! You have been credited ".. CommandPointsToCredit .." Shenanigans Points! Your total is now ".. NewTotal)
-							Connection:write(Response.."\n")
+							Connection:write(Response)
 						end
 						
 						if (Tags["custom-reward-id"] == "452d889c-42b2-4167-b7d5-fb374c0d9cad") then
@@ -67,7 +67,7 @@ return function(SharedData)
 							local CommandPointsToCredit = 1000
 							local NewTotal = SharedData.Database:AddPoints(UserID, CommandPointsToCredit)
 							local Response = IRC.PRIVMSG("#".. SharedData.Config.Twitch.Channel, "Thanks for the redeem! You have been credited ".. CommandPointsToCredit .." Shenanigans Points! Your total is now ".. NewTotal)
-							Connection:write(Response.."\n")
+							Connection:write(Response)
 						end
 						
 						if (Event.Command == "PING") then
@@ -82,7 +82,7 @@ return function(SharedData)
 									if Event.Prefix.Host[1] == "bigtrashking" then
 										Execute(Connection, Event, Parameters)
 									elseif RequiredPoints > Total then
-										Connection:write(IRC.PRIVMSG(Event.Params[1], "You dont have enough Shenanigans Points to do that") .."\n")
+										Connection:write(IRC.PRIVMSG(Event.Params[1], "You dont have enough Shenanigans Points to do that") )
 									else
 										SharedData.Database:AddPoints(Tags["user-id"], -RequiredPoints)
 										Execute(Connection, Event, Parameters)
