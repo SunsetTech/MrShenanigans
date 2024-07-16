@@ -60,23 +60,20 @@ return function(SharedData)
 		GL.Lib.glXMakeContextCurrent(Display, GLWindow, GLWindow, GLContext)
 		Context.Setup()
 
-		local GameWindowName = arg[1] or error"Provide game window title"
-		
-
 		print"Loading textures"
 		local Start = Utils.GetTime()
 		local Textures, TotalTextures = Assets.LoadTextures()
 		print("Loaded ".. TotalTextures .." textures")
 		
 		print"Creating dynamic textures"
-		local GamePixmapAttributes = ffi.new(
+		local ActivePixmapAttributes = ffi.new(
 			"const int[5]", {
 				GL.Lib.GLX_TEXTURE_TARGET_EXT, GL.Lib.GLX_TEXTURE_2D_EXT,
 				GL.Lib.GLX_TEXTURE_FORMAT_EXT, GL.Lib.GLX_TEXTURE_FORMAT_RGB_EXT,
 				0
 			}
 		)
-		Textures.Game = Capture.CreateTexture()
+		Textures.Active = Capture.CreateTexture()
 		Textures.NDISource = NDI.CreateTexture()
 		print("Texture loading/creation took ".. Utils.GetTime() - Start .." seconds")
 		SharedData.Textures = Textures.Buddies
@@ -84,49 +81,59 @@ return function(SharedData)
 		local RendererInstance = Renderer()
 		local LastUpdate = Utils.GetTime()
 		local Event = ffi.new"XEvent[1]"
-		local GameWindowMapped = false
+		local ActiveWindowCurrent = false
+		
+		local NewRootAttribute = ffi.new"XSetWindowAttributes[1]"
+		NewRootAttribute[0].event_mask = X11.PropertyChangeMask
+		X11.XChangeWindowAttributes(Display, Root, X11.CWEventMask, NewRootAttribute)
+		local _NET_ACTIVE_WINDOW = X11.XInternAtom(Display, "_NET_ACTIVE_WINDOW", true)
+		local ActiveWindow = ffi.new"Window[1]"
+		local FocusState = ffi.new"int[1]"
+		X11.XGetInputFocus(Display, ActiveWindow, FocusState)
 		while true do
 			local CurrentTime = Utils.GetTime()
 			local Delta = CurrentTime - LastUpdate
 			LastUpdate = CurrentTime
 
-			local ShouldReobtainGameSurface = false
+			local ShouldReobtainActiveSurface = false
 			while (X11.XPending(Display) > 0) do
 				X11.XNextEvent(Display, Event)
 				if (Event[0].type == 22) then
-					print"Game window resized"
-					ShouldReobtainGameSurface = true
+					print"Active window resized"
+					ShouldReobtainActiveSurface = true
 				elseif (Event[0].type == 17) then
-					print"Game window lost"
+					print"Active window lost"
 					--TODO game window disappeared, clean up related objects and wait for it to reappear
-					GameWindowMapped = false
-					GameWindow = 0
+					ActiveWindowCurrent = false
+					ActiveWindow[0] = 0
 				elseif (Event[0].type == 19) then
-					GameWindowMapped = true
+					ActiveWindowCurrent = true
+				elseif (Event[0].type == 28) and (Event[0].xproperty.atom == _NET_ACTIVE_WINDOW) then
+					X11.XGetInputFocus(Display, ActiveWindow, FocusState)
+					print("Active window is now", ActiveWindow[0])
+					ActiveWindowCurrent = false
 				end
 			end
-			
-			local GameSurface
-			if not GameWindowMapped then
-				GameWindow = Capture.FindWindowByTitle(GameWindowName)
-				if GameWindow > 0 then
+			local ActiveSurface
+			if not ActiveWindowCurrent then
+				if ActiveWindow[0] > 0 then
 					print"Found game window"
 					print"Redirecting game window to offscreen storage"
-					--X11.XSetWMProtocols(Display, GameWindow, wm_delete_window, 1);
-					Xcomposite.XCompositeRedirectWindow(Display, GameWindow, Xcomposite.CompositeRedirectAutomatic)
-					X11.XSelectInput(Display, GameWindow, bit.lshift(1,17)) --TODO make constant in X11 library
-					GameSurface = Capture.ObtainAndBind(Display, FBConfig, GameWindow, GamePixmapAttributes, Textures.Game)
-					GameWindowMapped = true
-					ShouldReobtainGameSurface = true
+					--X11.XSetWMProtocols(Display, ActiveWindow, wm_delete_window, 1);
+					Xcomposite.XCompositeRedirectWindow(Display, ActiveWindow[0], Xcomposite.CompositeRedirectAutomatic)
+					X11.XSelectInput(Display, ActiveWindow[0], bit.lshift(1,17)) --TODO make constant in X11 library
+					ActiveSurface = Capture.ObtainAndBind(Display, FBConfig, ActiveWindow[0], ActivePixmapAttributes, Textures.Active)
+					ActiveWindowCurrent = true
+					ShouldReobtainActiveSurface = true
 				end
-			elseif ShouldReobtainGameSurface then
-				if GameSurface then
-					Capture.UnbindAndRelease(Display, GameSurface, Textures.Game)
+			elseif ShouldReobtainActiveSurface then
+				if ActiveSurface then
+					Capture.UnbindAndRelease(Display, ActiveSurface, Textures.Active)
 				end
-				GameSurface = Capture.ObtainAndBind(Display, FBConfig, GameWindow, GamePixmapAttributes, Textures.Game)
+				ActiveSurface = Capture.ObtainAndBind(Display, FBConfig, ActiveWindow[0], ActivePixmapAttributes, Textures.Active)
 			end
 			
-			RendererInstance:DrawOverlay(SharedData, GameWindowMapped, Textures, Synchronizer)
+			RendererInstance:DrawOverlay(SharedData, ActiveWindowCurrent, Textures, Synchronizer)
 			
 			cqueues.sleep(0)
 		end

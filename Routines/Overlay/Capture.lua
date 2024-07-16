@@ -5,19 +5,6 @@ local Xcomposite = require"Xcomposite"
 local GL = require"Rendering.GL"
 
 local Capture; Capture = {
-	FindWindowByTitle = function(Title, Exclude)
-		local xwininfo = io.popen(([[xwininfo -name "%s" | grep "Window id" | awk '{print $4}']]):format(Title), "r")
-		assert(xwininfo)
-		local StringID = xwininfo:read"a"
-		print(StringID)
-		xwininfo:close()
-		if StringID and #StringID > 0 then
-			return tonumber(StringID) or 0
-		else
-			return 0
-		end
-	end;
-	
 	ObtainSurface = function(Display, Window)
 		local Surface = {}
 		print("Obtaining surface for", Window)

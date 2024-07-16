@@ -83,18 +83,18 @@ function Renderer:DrawImageToScreen(Texture, X, Y, ScaleX, ScaleY)
 	GL.API.DrawArrays(GL.Lib.GL_TRIANGLES, 0, 6)
 end
 
-function Renderer:DrawOverlay(SharedData, GameWindowMapped, Textures, Synchronizer)
+function Renderer:DrawOverlay(SharedData, ActiveWindowMapped, Textures, Synchronizer)
 	GL.API.ClearColor(0.0, 0.0, 0.0, 0.0); 
 	GL.API.Clear(GL.Lib.GL_COLOR_BUFFER_BIT)
 	GL.API.Clear(GL.Lib.GL_DEPTH_BUFFER_BIT)
 
 	self.CameraTransform:InvertInto(self.InverseCameraTransform)
 	if SharedData.RenderOverlay then
-		if GameWindowMapped then
+		if ActiveWindowMapped then
 			self:DrawImageToScreen(
-				Textures.Game, 
-				Textures.Game.Width/2+((1920-Textures.Game.Width)/2), 
-				Textures.Game.Height/2+((1080-Textures.Game.Height)/2), 
+				Textures.Active, 
+				Textures.Active.Width/2+((1920-Textures.Active.Width)/2), 
+				Textures.Active.Height/2+((1080-Textures.Active.Height)/2), 
 				SharedData.XFlipEnd >= Utils.GetTime() and -1 or 1, 
 				SharedData.YFlipEnd >= Utils.GetTime() and -1 or 1
 			)
