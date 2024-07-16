@@ -11,6 +11,8 @@ local Utils = require "Utils"
 
 local Config = require"Config"
 local RoutinePool = cqueues.new();
+
+---@class MrShenanigans.SharedData
 local SharedData = {
 	Database = DataManager"Data/Bot.db";
 	Config = Config;
