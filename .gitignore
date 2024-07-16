@@ -1,5 +1,5 @@
-Assets/*
-Data/*
-Secrets/*
+Assets
+Data
+Secrets
 .luarc.json
-.vim-sessions/
+.vim-sessions
